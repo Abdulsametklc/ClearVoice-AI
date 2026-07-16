@@ -50,6 +50,35 @@
 
 Legacy Gradio entry (`app.py`) remains available; the primary path is **FastAPI + React** via `api.py` and `baslat.bat`.
 
+## Live / Permanent Hosting
+
+ClearVoice AI is packaged as a **Docker** app for permanent hosting on **[Hugging Face Spaces](https://huggingface.co/spaces)** (best free option for PyTorch workloads).
+
+| Item | Value |
+| --- | --- |
+| Target Space | `Abdulsametklc/ClearVoice-AI` |
+| Space URL | https://huggingface.co/spaces/Abdulsametklc/ClearVoice-AI |
+| Public app URL | https://abdulsametklc-clearvoice-ai.hf.space |
+
+### One-time deploy
+
+1. Create a Write token: https://huggingface.co/settings/tokens  
+2. Login:
+
+```powershell
+hf auth login
+```
+
+3. Deploy:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy-hf.ps1
+```
+
+The Space builds the Docker image (FFmpeg + CPU PyTorch + React UI). First build can take several minutes; the first clean request may also download the Denoiser weights.
+
+Files used for hosting: `Dockerfile`, `requirements-docker.txt`, `deploy-hf.ps1`, `README_SPACE.md`.
+
 ## Prerequisites
 
 - **Python 3.10+**
@@ -62,8 +91,8 @@ Legacy Gradio entry (`app.py`) remains available; the primary path is **FastAPI 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/<YOUR_REPO>.git
-cd <YOUR_REPO>
+git clone https://github.com/Abdulsametklc/ClearVoice-AI.git
+cd ClearVoice-AI
 ```
 
 ### 2. Create a virtual environment
@@ -132,16 +161,17 @@ baslat-dev.bat
 ## Project Structure
 
 ```text
-├── api.py              # FastAPI app (serves API + built UI)
-├── cleaner.py          # Noise-reduction engine (core logic)
-├── app.py              # Optional Gradio UI (legacy)
+├── api.py                   # FastAPI app (serves API + built UI)
+├── cleaner.py               # Noise-reduction engine (core logic)
+├── app.py                   # Optional Gradio UI (legacy)
+├── Dockerfile               # Production image (HF Spaces / cloud)
 ├── requirements.txt
-├── baslat.bat          # Build frontend + start server
-├── baslat-dev.bat      # API + Vite dev server
-├── frontend/           # React + Tailwind source
-│   ├── src/App.jsx
-│   └── ...
-├── assets/             # Screenshots (preview.png)
+├── requirements-docker.txt
+├── deploy-hf.ps1            # Deploy to Hugging Face Spaces
+├── baslat.bat               # Build frontend + start server (local)
+├── baslat-dev.bat           # API + Vite dev server
+├── frontend/                # React + Tailwind source
+├── assets/                  # Screenshots (preview.png)
 └── README.md
 ```
 

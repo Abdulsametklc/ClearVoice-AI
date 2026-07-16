@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import tempfile
 import uuid
@@ -98,10 +99,12 @@ if FRONTEND_DIST.exists():
 if __name__ == "__main__":
     import uvicorn
 
-    print("ClearVoice AI -> http://127.0.0.1:7861")
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "7861"))
+    print(f"ClearVoice AI -> http://{host}:{port}")
     uvicorn.run(
         "api:app",
-        host="127.0.0.1",
-        port=7861,
+        host=host,
+        port=port,
         reload=False,
     )
