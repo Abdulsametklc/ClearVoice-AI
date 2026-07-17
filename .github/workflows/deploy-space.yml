@@ -1,69 +1,16 @@
 name: Deploy Hugging Face Space
 
+# Disabled on push: HF Docker Spaces require PRO / HF_TOKEN.
+# Keep manual trigger only if you later add a Write token + PRO plan.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "api.py"
-      - "cleaner.py"
-      - "Dockerfile"
-      - "requirements-docker.txt"
-      - "frontend/**"
-      - "README_SPACE.md"
-      - ".dockerignore"
-      - ".github/workflows/deploy-space.yml"
 
 jobs:
-  deploy:
+  notice:
     runs-on: ubuntu-latest
     steps:
-      - name: Require HF_TOKEN secret
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: Skipped by default
         run: |
-          if [ -z "$HF_TOKEN" ]; then
-            echo "Missing repository secret HF_TOKEN."
-            echo "Add it under Settings → Secrets → Actions, then re-run."
-            exit 1
-          fi
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install huggingface_hub
-        run: pip install -U huggingface_hub
-
-      - name: Prepare Space bundle
-        run: |
-          mkdir -p space_upload
-          cp Dockerfile api.py cleaner.py requirements-docker.txt .dockerignore space_upload/
-          cp README_SPACE.md space_upload/README.md
-          cp -r frontend space_upload/frontend
-          rm -rf space_upload/frontend/node_modules space_upload/frontend/dist || true
-
-      - name: Create Space and upload
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          python - <<'PY'
-          import os
-          from huggingface_hub import HfApi
-
-          token = os.environ["HF_TOKEN"]
-          api = HfApi(token=token)
-          repo_id = "Abdulsametklc/ClearVoice-AI"
-          api.create_repo(repo_id, repo_type="space", space_sdk="docker", exist_ok=True)
-          api.upload_folder(
-              folder_path="space_upload",
-              repo_id=repo_id,
-              repo_type="space",
-          )
-          print("Space: https://huggingface.co/spaces/" + repo_id)
-          print("App:   https://abdulsametklc-clearvoice-ai.hf.space")
-          PY
+          echo "HF Space auto-deploy is disabled."
+          echo "Primary live host: https://clearvoice-ai-4hnp.onrender.com/"
+          echo "To enable later: add HF_TOKEN secret and switch workflow back to push trigger."

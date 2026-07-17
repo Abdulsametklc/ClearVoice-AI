@@ -74,8 +74,14 @@ Cloud lite mode sets `CLEARVOICE_LITE=1` and maps AI methods to classical `noise
 
 ### Optional: GitHub Pages UI
 
-1. Repo **Settings → Pages → Source**: **GitHub Actions**  
-2. After Render is live, set Pages build `VITE_API_BASE` to your Render URL if different.
+Pages UI is published to the `gh-pages` branch by Actions.
+
+1. Repo **Settings → Pages**
+2. **Source**: Deploy from a branch
+3. **Branch**: `gh-pages` / `/ (root)` → Save
+
+Site: https://abdulsametklc.github.io/ClearVoice-AI/  
+(API calls go to the Render backend.)
 
 ## Prerequisites
 
