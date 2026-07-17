@@ -25,8 +25,8 @@ function formatBytes(bytes) {
 export default function App() {
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
-  const [strength, setStrength] = useState(90);
-  const [method, setMethod] = useState("denoiser");
+  const [strength, setStrength] = useState(70);
+  const [method, setMethod] = useState("noisereduce");
   const [format, setFormat] = useState("wav");
   const [dragging, setDragging] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -216,6 +216,9 @@ export default function App() {
                 {strength}%
               </span>
             </label>
+            <p className="mb-2 text-xs text-slate-500">
+              Bulutta 60–75% genelde daha doğal ses verir; çok yüksek değer konuşmayı boğabilir.
+            </p>
             <input
               type="range"
               min={30}

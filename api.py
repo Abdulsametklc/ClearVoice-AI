@@ -70,6 +70,9 @@ async def clean(
 
     fmt = "mp3" if output_format.lower().startswith("mp3") else "wav"
     strength_norm = max(0.3, min(1.0, float(strength) / 100.0))
+    # Lite: UI'daki %90 konuşmayı ezmesin diye biraz yumuşat
+    if LITE_MODE:
+        strength_norm = min(0.78, 0.40 + (strength_norm - 0.3) * 0.55)
 
     job_dir = TEMP_ROOT / str(uuid.uuid4())
     job_dir.mkdir(parents=True, exist_ok=True)
@@ -84,6 +87,7 @@ async def clean(
             method=method,
             strength=strength_norm,
             output_format=fmt,
+            speech_safe=LITE_MODE,
         )
     except Exception as exc:
         shutil.rmtree(job_dir, ignore_errors=True)

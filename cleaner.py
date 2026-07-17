@@ -124,28 +124,47 @@ def clean_with_noisereduce(
     audio: np.ndarray,
     sr: int,
     strength: float = 0.85,
+    *,
+    speech_safe: bool = False,
 ) -> tuple[np.ndarray, int]:
     """Spektral gürültü azaltma (klasik yöntem)."""
-    prop = float(np.clip(strength, 0.3, 1.0))
+    # Yüksek strength konuşmayı metalik/boğuk yapar; speech_safe bulut için daha yumuşak.
+    if speech_safe:
+        prop = float(np.clip(0.35 + strength * 0.35, 0.35, 0.72))
+        n_fft, hop = 4096, 512
+        second_pass = prop >= 0.62
+        second_prop = min(0.28, prop * 0.35)
+    else:
+        prop = float(np.clip(strength, 0.3, 1.0))
+        n_fft, hop = 2048, 512
+        second_pass = prop >= 0.7
+        second_prop = min(0.45, prop * 0.5)
 
-    # Önce sabit (stationary) gürültü, sonra hafif non-stationary
     cleaned = nr.reduce_noise(
         y=audio,
         sr=sr,
         stationary=True,
         prop_decrease=prop,
-        n_fft=2048,
-        hop_length=512,
+        n_fft=n_fft,
+        hop_length=hop,
     )
-    if prop >= 0.7:
+    if second_pass:
         cleaned = nr.reduce_noise(
             y=cleaned,
             sr=sr,
             stationary=False,
-            prop_decrease=min(0.45, prop * 0.5),
-            n_fft=2048,
-            hop_length=512,
+            prop_decrease=second_prop,
+            n_fft=n_fft,
+            hop_length=hop,
         )
+
+    # Hafif orijinal karışım: doğal tınıyı koru
+    if speech_safe:
+        mix = 0.12 + (1.0 - prop) * 0.10
+        n = min(len(cleaned), len(audio))
+        cleaned = cleaned.copy()
+        cleaned[:n] = (1.0 - mix) * cleaned[:n] + mix * audio[:n]
+
     return _normalize(cleaned), sr
 
 
@@ -154,6 +173,8 @@ def clean_audio(
     method: str = "denoiser",
     strength: float = 0.85,
     output_format: str = "wav",
+    *,
+    speech_safe: bool = False,
 ) -> Path:
     """
     Girdi dosyasındaki gürültüyü temizler, temiz ses dosyası yolu döner.
@@ -168,11 +189,15 @@ def clean_audio(
         dry = max(0.0, 1.0 - strength) * 0.35
         cleaned, out_sr = clean_with_denoiser(audio, sr, dry=dry)
     elif method == "noisereduce":
-        cleaned, out_sr = clean_with_noisereduce(audio, sr, strength=strength)
+        cleaned, out_sr = clean_with_noisereduce(
+            audio, sr, strength=strength, speech_safe=speech_safe
+        )
     elif method == "combo":
         dry = max(0.0, 1.0 - strength) * 0.25
         cleaned, out_sr = clean_with_denoiser(audio, sr, dry=dry)
-        cleaned, out_sr = clean_with_noisereduce(cleaned, out_sr, strength=min(strength, 0.55))
+        cleaned, out_sr = clean_with_noisereduce(
+            cleaned, out_sr, strength=min(strength, 0.55), speech_safe=speech_safe
+        )
     else:
         raise ValueError(f"Bilinmeyen yöntem: {method}")
 
