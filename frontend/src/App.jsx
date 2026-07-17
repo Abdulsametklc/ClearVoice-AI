@@ -12,6 +12,9 @@ import {
 const ACCEPT =
   ".mp3,.mp4,.wav,.m4a,.aac,.flac,.ogg,.webm,.mkv,audio/*,video/*";
 
+/** Empty = same-origin (Docker/HF). Set VITE_API_BASE for GitHub Pages. */
+const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+
 function formatBytes(bytes) {
   if (!bytes && bytes !== 0) return "";
   if (bytes < 1024) return `${bytes} B`;
@@ -83,7 +86,7 @@ export default function App() {
     body.append("output_format", format);
 
     try {
-      const res = await fetch("/api/clean", { method: "POST", body });
+      const res = await fetch(`${API_BASE}/api/clean`, { method: "POST", body });
       if (!res.ok) {
         let detail = "İşlem başarısız.";
         try {
