@@ -10,14 +10,15 @@ import librosa
 import noisereduce as nr
 import numpy as np
 import soundfile as sf
-import torch
 
 SUPPORTED_EXTENSIONS = {".mp3", ".mp4", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".webm", ".mkv"}
 
 _denoiser_model = None
 
 
-def _device() -> torch.device:
+def _device():
+    import torch
+
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -25,6 +26,7 @@ def _init_denoiser():
     """Facebook Denoiser (Demucs tabanlı konuşma iyileştirme)."""
     global _denoiser_model
     if _denoiser_model is None:
+        import torch
         from denoiser import pretrained
 
         model = pretrained.dns64()
@@ -85,6 +87,8 @@ def _normalize(audio: np.ndarray) -> np.ndarray:
 
 def clean_with_denoiser(audio: np.ndarray, sr: int, dry: float = 0.0) -> tuple[np.ndarray, int]:
     """Yapay zeka ile konuşma gürültü temizleme (Facebook Denoiser)."""
+    import torch
+
     model = _init_denoiser()
     target_sr = int(model.sample_rate)
 

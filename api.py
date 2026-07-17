@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent
 FRONTEND_DIST = ROOT / "frontend" / "dist"
 TEMP_ROOT = Path(tempfile.gettempdir()) / "clearvoice_jobs"
 TEMP_ROOT.mkdir(parents=True, exist_ok=True)
+LITE_MODE = os.getenv("CLEARVOICE_LITE", "0").strip().lower() in {"1", "true", "yes"}
 
 app = FastAPI(title="ClearVoice AI", version="1.0.0")
 
@@ -33,7 +34,11 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": "ClearVoice AI"}
+    return {
+        "status": "ok",
+        "app": "ClearVoice AI",
+        "mode": "lite" if LITE_MODE else "full",
+    }
 
 
 @app.post("/api/clean")
@@ -58,6 +63,10 @@ async def clean(
 
     if method not in {"denoiser", "noisereduce", "combo"}:
         method = "denoiser"
+
+    # Free-tier / lite hosts: classical spectral reduction only (no PyTorch)
+    if LITE_MODE and method in {"denoiser", "combo"}:
+        method = "noisereduce"
 
     fmt = "mp3" if output_format.lower().startswith("mp3") else "wav"
     strength_norm = max(0.3, min(1.0, float(strength) / 100.0))

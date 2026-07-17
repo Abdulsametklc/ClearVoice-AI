@@ -52,36 +52,30 @@ Legacy Gradio entry (`app.py`) remains available; the primary path is **FastAPI 
 
 ## Live / Permanent Hosting
 
-GitHub Pages **cannot** run Python/PyTorch. ClearVoice uses a solid hybrid setup:
+**Recommended (simple & free):** [Render](https://render.com) Docker free tier.
 
-| Layer | Where | URL |
+| Layer | Host | Notes |
 | --- | --- | --- |
-| **UI** | GitHub Pages | https://abdulsametklc.github.io/ClearVoice-AI/ |
-| **AI API + full app** | Hugging Face Spaces (Docker) | https://abdulsametklc-clearvoice-ai.hf.space |
+| **Full app** | Render | Classical noise reduction (lite, reliable on free RAM) |
+| **UI mirror** | GitHub Pages | Optional; points at the Render API |
 
-### 1) Backend (Hugging Face Spaces) — required once
+### Deploy on Render (2 minutes)
 
-1. Create a **Write** token: https://huggingface.co/settings/tokens  
-2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**  
-   - Name: `HF_TOKEN`  
-   - Value: your Hugging Face token  
-3. Push to `main` (or run **Actions → Deploy Hugging Face Space → Run workflow**)
+1. Open: https://render.com/deploy?repo=https://github.com/Abdulsametklc/ClearVoice-AI  
+2. Sign in with GitHub → **Create Web Service**  
+3. Wait for the first build (~5–10 min)
 
-Space page: https://huggingface.co/spaces/Abdulsametklc/ClearVoice-AI  
+App URL will look like: `https://clearvoice-ai.onrender.com`
 
-### 2) Frontend (GitHub Pages)
+> Free Render services sleep after idle; first request may take ~30–60s to wake.
+
+Local full AI (PyTorch) still works with `baslat.bat` / `requirements.txt`.  
+Cloud lite mode sets `CLEARVOICE_LITE=1` and maps AI methods to classical `noisereduce`.
+
+### Optional: GitHub Pages UI
 
 1. Repo **Settings → Pages → Source**: **GitHub Actions**  
-2. Push to `main` (workflow: `Deploy GitHub Pages`)
-
-Pages site: https://abdulsametklc.github.io/ClearVoice-AI/  
-
-Local one-shot deploy to Spaces (optional):
-
-```powershell
-hf auth login
-powershell -ExecutionPolicy Bypass -File .\deploy-hf.ps1
-```
+2. After Render is live, set Pages build `VITE_API_BASE` to your Render URL if different.
 
 ## Prerequisites
 

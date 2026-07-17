@@ -1,0 +1,10 @@
+# Lightweight cloud image (Render free tier) — classic spectral denoising
+# Full AI (PyTorch Denoiser) remains available locally via requirements.txt
+numpy>=1.24.0
+soundfile>=0.12.1
+librosa>=0.10.1
+noisereduce>=3.0.2
+pydub>=0.25.1
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9

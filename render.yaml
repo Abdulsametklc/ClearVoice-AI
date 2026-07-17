@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: clearvoice-ai
+    runtime: docker
+    plan: free
+    region: frankfurt
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: CLEARVOICE_LITE
+        value: "1"
+      - key: HOST
+        value: "0.0.0.0"

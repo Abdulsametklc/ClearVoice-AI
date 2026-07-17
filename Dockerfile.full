@@ -1,4 +1,4 @@
-# Lightweight production image for Render (reliable free hosting)
+# Full AI image (PyTorch Denoiser) — needs ~2GB+ RAM (HF Pro / paid hosts)
 FROM node:22-bookworm-slim AS frontend
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
@@ -12,8 +12,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     HOST=0.0.0.0 \
-    PORT=10000 \
-    CLEARVOICE_LITE=1
+    PORT=7860 \
+    TORCH_HOME=/tmp/torch \
+    HF_HOME=/tmp/huggingface
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -22,12 +23,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY requirements-lite.txt .
-RUN pip install --upgrade pip && pip install -r requirements-lite.txt
+RUN pip install --upgrade pip \
+    && pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+COPY requirements-docker.txt .
+RUN pip install -r requirements-docker.txt
 
 COPY cleaner.py api.py ./
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 
-EXPOSE 10000
+EXPOSE 7860
 
 CMD ["python", "api.py"]

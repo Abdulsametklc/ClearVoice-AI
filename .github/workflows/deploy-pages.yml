@@ -31,8 +31,8 @@ jobs:
       - name: Install & build frontend
         working-directory: frontend
         env:
-          # Permanent backend on Hugging Face Spaces
-          VITE_API_BASE: https://abdulsametklc-clearvoice-ai.hf.space
+          # Permanent backend on Render (update if your service name differs)
+          VITE_API_BASE: https://clearvoice-ai.onrender.com
           VITE_BASE: /ClearVoice-AI/
         run: |
           npm ci
