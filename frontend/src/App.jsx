@@ -5,6 +5,7 @@ import {
   Download,
   FileAudio,
   Loader2,
+  Play,
   Sparkles,
   X,
 } from "lucide-react";
@@ -12,8 +13,20 @@ import {
 const ACCEPT =
   ".mp3,.mp4,.wav,.m4a,.aac,.flac,.ogg,.webm,.mkv,audio/*,video/*";
 
-/** Empty = same-origin (Docker/HF). Set VITE_API_BASE for GitHub Pages. */
 const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+
+const METHODS = [
+  { id: "noisereduce", label: "Klasik" },
+  { id: "denoiser", label: "Yapay zeka" },
+  { id: "combo", label: "Güçlü" },
+];
+
+const FORMATS = [
+  { id: "wav", label: "WAV" },
+  { id: "mp3", label: "MP3" },
+];
+
+const STRENGTH_PRESETS = [50, 60, 70, 80, 90];
 
 function formatBytes(bytes) {
   if (!bytes && bytes !== 0) return "";
@@ -22,8 +35,20 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function WaveBars({ active }) {
+  const heights = [28, 44, 22, 52, 36, 48, 18, 40, 56, 30, 46, 24, 50, 34, 42, 20, 48, 38, 26, 54, 32, 44, 22, 40];
+  return (
+    <div className={`wave ${active ? "opacity-100" : "opacity-40"}`} aria-hidden="true">
+      {heights.map((h, i) => (
+        <span key={i} style={{ height: `${h}%` }} />
+      ))}
+    </div>
+  );
+}
+
 export default function App() {
   const inputRef = useRef(null);
+  const cleanedAudioRef = useRef(null);
   const [file, setFile] = useState(null);
   const [strength, setStrength] = useState(70);
   const [method, setMethod] = useState("noisereduce");
@@ -110,252 +135,260 @@ export default function App() {
     }
   }
 
+  function playCleaned() {
+    cleanedAudioRef.current?.play?.();
+  }
+
+  const methodLabel = METHODS.find((m) => m.id === method)?.label || method;
+
   return (
-    <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <header className="glass flex items-center justify-between rounded-2xl px-5 py-4">
+    <div className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+        <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-slate-950 shadow-lg shadow-emerald-500/25">
-              <AudioLines size={22} strokeWidth={2.25} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#7dcf6a] to-[#e89a3c] text-[#111] shadow-lg shadow-orange-500/20">
+              <AudioLines size={20} strokeWidth={2.4} />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+              <h1 className="text-lg font-bold tracking-tight text-white sm:text-xl">
                 ClearVoice AI
               </h1>
-              <p className="text-sm text-slate-400">
-                Premium ses gürültü temizleme
-              </p>
+              <p className="text-sm text-[#9a9aa3]">Ses gürültü temizleme stüdyosu</p>
             </div>
           </div>
-          <div className="hidden items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-300 sm:flex">
-            <Sparkles size={14} />
-            Yerel AI işlem
-          </div>
+          <p className="max-w-sm text-right text-xs leading-relaxed text-[#8a8a94]">
+            Online sürüm hızlı deneme içindir. En iyi AI kalitesi için lokal kurulum önerilir.
+          </p>
         </header>
 
-        <main className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-          <section className="glass rounded-2xl p-5 sm:p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Upload
+        <main className="grid gap-5 lg:grid-cols-[1fr_1.15fr]">
+          {/* LEFT — output / actions */}
+          <section className="studio-panel flex flex-col p-5 sm:p-6">
+            <h2 className="text-[1.65rem] font-extrabold leading-tight tracking-tight text-white sm:text-[1.9rem]">
+              kayıttaki <span className="text-[#e89a3c]">gürültüyü temizle</span>
             </h2>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-[#9a9aa3]">
+              Dosya yükle, yöntemi ve gücü seç, temiz sesi anında dinle veya indir.
+            </p>
 
-            <div
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
-              }}
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragging(true);
-              }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={onDrop}
-              className={[
-                "group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition",
-                dragging
-                  ? "border-emerald-400 bg-emerald-400/10"
-                  : "border-slate-600/70 bg-slate-900/35 hover:border-emerald-400/50 hover:bg-slate-900/50",
-              ].join(" ")}
-            >
-              <input
-                ref={inputRef}
-                type="file"
-                accept={ACCEPT}
-                className="hidden"
-                onChange={(e) => onPickFile(e.target.files?.[0])}
-              />
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800/80 text-emerald-300 ring-1 ring-white/10">
-                <CloudUpload size={28} />
+            <div className="mt-5 rounded-2xl border border-[#2a2a30] bg-[#1a1a1e] p-4">
+              <WaveBars active={Boolean(cleanedUrl) || processing} />
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">
+                    {cleanedUrl
+                      ? cleanedName || "Temiz ses"
+                      : file
+                        ? file.name
+                        : "Henüz dosya yok"}
+                  </p>
+                  <p className="text-xs text-[#8a8a94]">
+                    {methodLabel} · {strength}% güç · {format.toUpperCase()}
+                  </p>
+                </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#2a2a30] bg-[#141416] text-[#e89a3c]">
+                  <AudioLines size={18} />
+                </div>
               </div>
-              <p className="text-base font-semibold text-slate-100">
-                Drag & drop audio file here
-              </p>
-              <p className="mt-1 text-sm text-slate-400">
-                or click to browse · MP3, WAV, M4A, MP4…
-              </p>
+
+              {cleanedUrl && (
+                <div className="mt-3">
+                  <audio ref={cleanedAudioRef} controls src={cleanedUrl} />
+                </div>
+              )}
+              {originalUrl && !cleanedUrl && (
+                <div className="mt-3">
+                  <p className="mb-1 text-[11px] uppercase tracking-wide text-[#6f6f78]">Orijinal</p>
+                  <audio controls src={originalUrl} />
+                </div>
+              )}
             </div>
 
-            {file && (
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-700/70 bg-slate-900/50 px-4 py-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300">
-                    <FileAudio size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-100">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-slate-500">{formatBytes(file.size)}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFile(null);
-                    resetResult();
-                  }}
-                  className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
-                  aria-label="Dosyayı kaldır"
-                >
-                  <X size={16} />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!file || processing}
+                onClick={cleanAudio}
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    İşleniyor…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    Gürültüyü temizle
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={!cleanedUrl}
+                onClick={playCleaned}
+              >
+                <Play size={15} />
+                Temiz sesi çal
+              </button>
+
+              {cleanedUrl ? (
+                <a href={cleanedUrl} download={cleanedName} className="btn-ghost">
+                  <Download size={15} />
+                  İndir
+                </a>
+              ) : (
+                <button type="button" className="btn-ghost" disabled>
+                  <Download size={15} />
+                  İndir
                 </button>
-              </div>
+              )}
+            </div>
+
+            {error && (
+              <p className="mt-4 text-sm font-medium text-[#e89a3c]">{error}</p>
+            )}
+            {processing && (
+              <p className="mt-3 flex items-center gap-2 text-sm text-[#9a9aa3]">
+                <Loader2 className="animate-spin text-[#e89a3c]" size={16} />
+                Ses temizleniyor, lütfen bekleyin…
+              </p>
             )}
           </section>
 
-          <section className="glass flex flex-col rounded-2xl p-5 sm:p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Settıngs
-            </h2>
+          {/* RIGHT — settings */}
+          <section className="studio-panel p-5 sm:p-6">
+            <div className="mb-5">
+              <p className="mb-2 text-sm font-semibold text-white">Dosya</p>
+              <div
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+                }}
+                onClick={() => inputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={onDrop}
+                className={[
+                  "flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-7 text-center transition",
+                  dragging
+                    ? "border-[#e89a3c] bg-[rgba(232,154,60,0.08)]"
+                    : "border-[#2a2a30] bg-[#1a1a1e] hover:border-[#3f3f48]",
+                ].join(" ")}
+              >
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept={ACCEPT}
+                  className="hidden"
+                  onChange={(e) => onPickFile(e.target.files?.[0])}
+                />
+                <CloudUpload className="mb-2 text-[#e89a3c]" size={26} />
+                <p className="text-sm font-semibold text-white">Sürükle-bırak veya seç</p>
+                <p className="mt-1 text-xs text-[#8a8a94]">MP3, WAV, M4A, MP4…</p>
+              </div>
 
-            <label className="mb-2 flex items-center justify-between text-sm text-slate-300">
-              <span>Noise Reduction Strength</span>
-              <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-300">
-                {strength}%
-              </span>
-            </label>
-            <p className="mb-2 text-xs text-slate-500">
-              Bulutta 60–75% genelde daha doğal ses verir; çok yüksek değer konuşmayı boğabilir.
-            </p>
-            <input
-              type="range"
-              min={30}
-              max={100}
-              step={5}
-              value={strength}
-              onChange={(e) => setStrength(Number(e.target.value))}
-              className="mb-6 h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-emerald-400"
-            />
-
-            <label className="mb-2 text-sm text-slate-300">Method</label>
-            <div className="mb-5 grid grid-cols-3 gap-2">
-              {[
-                { id: "denoiser", label: "AI" },
-                { id: "noisereduce", label: "Classic" },
-                { id: "combo", label: "Strong" },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setMethod(opt.id)}
-                  className={[
-                    "rounded-xl px-2 py-2.5 text-sm font-medium transition",
-                    method === opt.id
-                      ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25"
-                      : "bg-slate-800/70 text-slate-300 hover:bg-slate-700/80",
-                  ].join(" ")}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            <label className="mb-2 text-sm text-slate-300">Output</label>
-            <div className="mb-6 grid grid-cols-2 gap-2">
-              {[
-                { id: "wav", label: "WAV" },
-                { id: "mp3", label: "MP3" },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setFormat(opt.id)}
-                  className={[
-                    "rounded-xl px-2 py-2.5 text-sm font-medium transition",
-                    format === opt.id
-                      ? "bg-white/90 text-slate-900"
-                      : "bg-slate-800/70 text-slate-300 hover:bg-slate-700/80",
-                  ].join(" ")}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              disabled={!file || processing}
-              onClick={cleanAudio}
-              className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 px-4 py-3.5 text-base font-semibold text-slate-950 shadow-xl shadow-emerald-500/25 transition enabled:hover:brightness-105 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="animate-spin" size={18} />
-                  AI is processing…
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  Clean Audio
-                </>
+              {file && (
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#2a2a30] bg-[#1a1a1e] px-3 py-2.5">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <FileAudio className="shrink-0 text-[#e89a3c]" size={16} />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-white">{file.name}</p>
+                      <p className="text-xs text-[#8a8a94]">{formatBytes(file.size)}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFile(null);
+                      resetResult();
+                    }}
+                    className="rounded-lg p-1.5 text-[#8a8a94] hover:bg-[#222] hover:text-white"
+                    aria-label="Kaldır"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
 
-            {error && (
-              <p className="mt-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                {error}
+            <div className="mb-5">
+              <p className="mb-2 text-sm font-semibold text-white">Yöntem</p>
+              <div className="flex flex-wrap gap-2">
+                {METHODS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`pill ${method === opt.id ? "pill-active" : ""}`}
+                    onClick={() => setMethod(opt.id)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <p className="mb-2 text-sm font-semibold text-white">Çıktı formatı</p>
+              <div className="flex flex-wrap gap-2">
+                {FORMATS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`pill ${format === opt.id ? "pill-active" : ""}`}
+                    onClick={() => setFormat(opt.id)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <p className="mb-2 text-sm font-semibold text-white">Hızlı güç</p>
+              <div className="flex flex-wrap gap-2">
+                {STRENGTH_PRESETS.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`pill ${strength === v ? "pill-active" : ""}`}
+                    onClick={() => setStrength(v)}
+                  >
+                    {v}%
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-semibold text-white">Temizlik gücü</p>
+                <span className="text-sm font-bold text-[#e89a3c]">{strength}%</span>
+              </div>
+              <input
+                type="range"
+                min={30}
+                max={100}
+                step={5}
+                value={strength}
+                onChange={(e) => setStrength(Number(e.target.value))}
+                className="accent-slider"
+              />
+              <p className="mt-2 text-xs text-[#8a8a94]">
+                60–75% genelde daha doğal; çok yüksek değer konuşmayı boğabilir.
               </p>
-            )}
+            </div>
           </section>
         </main>
 
-        {(originalUrl || cleanedUrl || processing) && (
-          <section className="grid gap-5 md:grid-cols-2">
-            <article className="glass rounded-2xl p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Original Audio
-                </h3>
-                <span className="rounded-full bg-slate-700/60 px-2.5 py-1 text-[11px] text-slate-300">
-                  Source
-                </span>
-              </div>
-              {originalUrl ? (
-                <audio controls src={originalUrl} className="w-full" />
-              ) : (
-                <p className="text-sm text-slate-500">Dosya seçilmedi</p>
-              )}
-            </article>
-
-            <article className="glass rounded-2xl p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Cleaned Audio
-                </h3>
-                <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] text-emerald-300">
-                  Result
-                </span>
-              </div>
-              {processing ? (
-                <div className="flex min-h-[54px] items-center gap-3 text-sm text-slate-300">
-                  <Loader2 className="animate-spin text-emerald-400" size={18} />
-                  Cleaning in progress…
-                </div>
-              ) : cleanedUrl ? (
-                <>
-                  <audio controls src={cleanedUrl} className="mb-4 w-full" />
-                  <a
-                    href={cleanedUrl}
-                    download={cleanedName}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
-                  >
-                    <Download size={16} />
-                    Download Result
-                  </a>
-                </>
-              ) : (
-                <p className="text-sm text-slate-500">
-                  Temizlenmiş ses burada görünecek
-                </p>
-              )}
-            </article>
-          </section>
-        )}
-
-        <footer className="pb-2 text-center text-xs text-slate-500">
-          ClearVoice AI · Dosyalarınız cihazınızda işlenir
+        <footer className="pb-2 text-center text-xs text-[#6f6f78]">
+          ClearVoice AI · Teknofest ekipleri için ücretsiz gürültü temizleme
         </footer>
       </div>
     </div>
